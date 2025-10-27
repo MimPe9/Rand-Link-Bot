@@ -9,13 +9,6 @@ import (
 	"io"
 )
 
-/*type Storage interface {
-	Save(p *Page) error
-	PickRandom(userName string) (*Page, error)
-	Remove(p *Page) error
-	IsExists(p *Page) (bool, error)
-}*/
-
 type Storage interface {
 	Save(ctx context.Context, page *Page) error
 	PickRandom(ctx context.Context, userName string) (*Page, error)

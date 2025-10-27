@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  bot:
+  rand-bot:
     build: .
     environment:
       DB_HOST: ${DB_HOST}

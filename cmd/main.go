@@ -55,5 +55,3 @@ func setupStorage() *storage.PostgresStorage {
 
 	return s
 }
-
-//can't handle event: can't process message: can't do command: save page: can't check if page exists: pq: syntax error at or near
