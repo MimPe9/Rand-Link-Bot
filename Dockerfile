@@ -9,4 +9,4 @@ COPY . .
 
 RUN go build -o rand-link-bot ./cmd
 
-CMD [ "./rand-link-bot" ]
+CMD ["./rand-link-bot"]

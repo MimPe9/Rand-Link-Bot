@@ -16,12 +16,14 @@ type PostgresStorage struct {
 }
 
 func NewPostgresStorage(path string) (*PostgresStorage, error) {
-	log.Printf("Connection string: %s", path)
+	log.Printf("Connection string: %s", path) // Добавьте эту строку для отладки
 
+	var db *sql.DB
 	var err error
 
+	// Попытки подключения с задержкой
 	for i := 0; i < 10; i++ {
-		db, err := sql.Open("postgres", path)
+		db, err = sql.Open("postgres", path)
 		if err != nil {
 			log.Printf("Attempt %d: sql.Open error: %v", i+1, err)
 			time.Sleep(2 * time.Second)
@@ -31,17 +33,18 @@ func NewPostgresStorage(path string) (*PostgresStorage, error) {
 		err = db.Ping()
 		if err == nil {
 			log.Println("Successfully connected to database")
-			return &PostgresStorage{db: db}, nil
+			return &PostgresStorage{db}, nil
 		}
 
 		log.Printf("Attempt %d: Failed to ping database: %v", i+1, err)
 		time.Sleep(2 * time.Second)
 	}
+
 	return nil, fmt.Errorf("failed to connect to database after retries: %w", err)
 }
 
 func (s *PostgresStorage) Save(ctx context.Context, page *storage.Page) error {
-	q := `INSERT INTO pages (url, user_name) VALUES (?, ?)`
+	q := `INSERT INTO pages (url, user_name) VALUES ($1, $2)`
 
 	if _, err := s.db.ExecContext(ctx, q, page.URL, page.UserName); err != nil {
 		return fmt.Errorf("can't save page: %w", err)
@@ -50,7 +53,7 @@ func (s *PostgresStorage) Save(ctx context.Context, page *storage.Page) error {
 }
 
 func (s *PostgresStorage) PickRandom(ctx context.Context, userName string) (*storage.Page, error) {
-	q := `SELECT url FROM pages WHERE user_name = ? ORDER BY RANDOM() LIMIT 1`
+	q := `SELECT url FROM pages WHERE user_name = $1 ORDER BY RANDOM() LIMIT 1`
 
 	var url string
 
@@ -68,7 +71,7 @@ func (s *PostgresStorage) PickRandom(ctx context.Context, userName string) (*sto
 }
 
 func (s *PostgresStorage) Remove(ctx context.Context, page *storage.Page) error {
-	q := `DELETE FROM pages WHERE url = ? AND user_name = ?`
+	q := `DELETE FROM pages WHERE url = $1 AND user_name = $2`
 
 	if _, err := s.db.ExecContext(ctx, q, page.URL, page.UserName); err != nil {
 		return fmt.Errorf("can't remove page: %w", err)
@@ -77,7 +80,7 @@ func (s *PostgresStorage) Remove(ctx context.Context, page *storage.Page) error 
 }
 
 func (s *PostgresStorage) IsExists(ctx context.Context, page *storage.Page) (bool, error) {
-	q := `SELECT COUNT(*) FROM pages WHERE url = ? and user_name = ?`
+	q := `SELECT COUNT(*) FROM pages WHERE url = $1 AND user_name = $2`
 
 	var count int
 
