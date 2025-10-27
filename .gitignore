@@ -1,3 +1,4 @@
 .env
 bot.exe
 files_storage
+/config

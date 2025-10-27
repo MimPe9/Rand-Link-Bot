@@ -1,38 +1,28 @@
 package main
 
 import (
-	//"context"
-
+	"context"
+	"fmt"
 	"log"
 
 	tgClient "bot/clients/telegram"
+	"bot/config"
 	event_consumer "bot/consumer/event-consumer"
 	"bot/events/telegram"
 	"bot/pkg/systems"
 
-	"bot/storage/files"
-	//"bot/storage/sqlite"
+	storage "bot/storage/postgres"
 )
 
 const (
-	tgBotHost         = "api.telegram.org"
-	storagePath       = "files_storage"
-	sqlitestoragePath = "data/sqlite/storage.db"
-	batchSize         = 100
+	tgBotHost = "api.telegram.org"
+	batchSize = 100
 )
 
 func main() {
-	s := files.New(storagePath)
-
 	token := systems.BotToken()
-	/*s, err := sqlite.New(sqlitestoragePath)
-	if err != nil {
-		log.Fatal("can't connect to storage: ", err)
-	}
-
-	if err := s.Init(context.TODO()); err != nil {
-		log.Fatal("can't init storage: ", err)
-	}*/
+	s := setupStorage()
+	defer s.Close()
 
 	eventsProcessor := telegram.New(
 		tgClient.New(tgBotHost, token),
@@ -47,17 +37,21 @@ func main() {
 	}
 }
 
-/*func mustToken() string {
-	token := flag.String(
-		"tg-bot-token",
-		"",
-		"token for access to telegram bot",
-	)
+func setupStorage() *storage.PostgresStorage {
+	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s",
+		config.GetDBUser(), config.GetDBName(), config.GetDBPass(),
+		config.GetDBHost(), config.GetDBPort(), config.GetDBSSLMode())
 
-	flag.Parse()
+	log.Printf("Connecting to database: %s@%s:%s", config.GetDBUser(), config.GetDBHost(), config.GetDBPort())
 
-	if *token == "" {
-		log.Fatal("token is not specified")
+	s, err := storage.NewPostgresStorage(connStr)
+	if err != nil {
+		log.Fatal("can't connect to storage: ", err)
 	}
-	return *token
-}*/
+
+	if err := s.Init(context.TODO()); err != nil {
+		log.Fatal("can't init storage: ", err)
+	}
+
+	return s
+}
